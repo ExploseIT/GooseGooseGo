@@ -153,7 +153,12 @@ git commit -m "Initial commit for GooseGooseGo Django project"
 4. (Optional) Connect to GitHub
 If you've created a remote repo:
 
-git remote add origin https://github.com/YourUsername/GooseGooseGo.git
+git remote add origin https://github.com/ExploseIT/GooseGooseGo.git
 git push -u origin main  # or `master`, depending on default branch
 If you're using GitHub and need help creating the remote repo, I can guide you through that too.
 
+-----------------------
+
+If you want to force-push your local project and overwrite the GitHub history (removes the README commit):
+
+git push -f origin main
