@@ -32,9 +32,50 @@ WantedBy=multi-user.target
 
 sudo nano /etc/nginx/sites-available/goosegoosego
 
+Nginx config
+
+
+upstream ggg_frontend {
+    server 127.0.0.1:3000;
+}
+
+server {
+    listen 443 ssl;
+    server_name goosegoosego.co.uk;
+
+    ssl_certificate /etc/letsencrypt/live/goosegoosego.co.uk/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/goosegoosego.co.uk/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location /static/ {
+        root /home/adm_linux/GooseGooseGo;
+    }
+
+    location /api/ {
+        include proxy_params;
+        proxy_pass http://unix:/home/adm_linux/GooseGooseGo/goosegoosego.sock;
+    }
+
+    location / {
+        proxy_pass http://ggg_frontend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+
 server {
     listen 80;
-    server_name goosegoosego.co.uk; 
+    server_name goosegoosego.co.uk;
+    return 301 https://$host$request_uri;
+}
+
+------------------------
+server {
+    server_name goosegoosego.co.uk;
 
     location = /favicon.ico { access_log off; log_not_found off; }
     location /static/ {
@@ -45,6 +86,27 @@ server {
         include proxy_params;
         proxy_pass http://unix:/home/adm_linux/GooseGooseGo/goosegoosego.sock;
     }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/goosegoosego.co.uk/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/goosegoosego.co.uk/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+
+
+server {
+    if ($host = goosegoosego.co.uk) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name goosegoosego.co.uk;
+    return 404; # managed by Certbot
+
+
 }
 
 ---
@@ -162,3 +224,60 @@ If you're using GitHub and need help creating the remote repo, I can guide you t
 If you want to force-push your local project and overwrite the GitHub history (removes the README commit):
 
 git push -f origin main
+
+------------------------
+
+ Step-by-step: Add HTTPS to goosegoosego.co.uk
+✅ 1. Install Certbot (for Nginx)
+
+sudo apt update
+sudo apt install certbot python3-certbot-nginx
+
+✅ 2. Verify your Nginx config
+Ensure you have a server block like:
+
+
+server {
+    server_name goosegoosego.co.uk www.goosegoosego.co.uk;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root /home/adm_linux/GooseGooseGo;
+    }
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/home/adm_linux/GooseGooseGo/goosegoosego.sock;
+    }
+}
+Make sure this config is active and reload Nginx:
+
+
+sudo nginx -t
+sudo systemctl reload nginx
+
+✅ 3. Run Certbot for Nginx
+Now issue the SSL cert:
+
+
+sudo certbot --nginx -d goosegoosego.co.uk -d www.goosegoosego.co.uk
+Follow the prompts:
+
+Choose to redirect HTTP to HTTPS when asked
+
+Certbot will update your Nginx config for SSL
+
+✅ 4. Auto-renewal (already enabled by default)
+You can confirm with:
+
+
+sudo certbot renew --dry-run
+Once that’s done, you’ll be able to visit:
+
+🔒 https://goosegoosego.co.uk
+
+
+-------
+cd ~
+zip -r GooseGooseGo.zip GooseGooseGo
+zip -r GooseGooseGo_260724_0847.zip GooseGooseGo
