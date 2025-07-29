@@ -1,3 +1,7 @@
+
+info/
+honck_metadata/
+
 # Python
 __pycache__/
 *.py[cod]
